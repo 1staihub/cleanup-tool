@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>清理扫描报告</title>
+  <style>
+    body{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#0b1020;color:#e8eefc;margin:0;padding:24px;}
+    .wrap{max-width:1180px;margin:0 auto;}
+    .hero{background:linear-gradient(135deg,#16203a,#0f172a);border:1px solid #24314f;border-radius:20px;padding:24px;margin-bottom:20px;}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0;}
+    .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#1f2937;margin-right:8px;}
+    .green{background:#0f5132;}
+    .yellow{background:#6b4e00;}
+    .red{background:#6b1d1d;}
+    .section{margin:18px 0;}
+    .section h2{margin:0 0 10px 0;}
+    .card{background:#111827;border:1px solid #24314f;border-radius:16px;padding:14px;margin:10px 0;}
+    .card-head{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;}
+    .card-title{font-weight:700;}
+    .card-size{color:#9fb3d9;font-weight:600;}
+    .meta{margin-top:10px;color:#d0ddf7;}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+    button{border:0;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;}
+    .btn-clean{background:#1d4ed8;color:#fff;}
+    .btn-open{background:#374151;color:#fff;}
+    .btn-greenall{background:#0f5132;color:#fff;}
+    .btn-muted{background:#374151;color:#cbd5e1;}
+    .status{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;margin-left:8px;background:#334155;color:#e2e8f0;}
+    .status.done{background:#14532d;}
+    .status.warn{background:#854d0e;}
+    .empty{opacity:.7;padding:10px 0;}
+    code{background:#0b1220;padding:2px 6px;border-radius:6px;}
+    ul{padding-left:20px;}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <h1>清理扫描报告</h1>
+    <p>系统：{{SYSTEM_OS}} | 用户：{{SYSTEM_USER}} | 主盘：{{SYSTEM_DRIVE}}</p>
+    <div class="grid">
+      <div class="pill green">绿灯 {{GREEN_SIZE}}</div>
+      <div class="pill yellow">黄灯 {{YELLOW_SIZE}}</div>
+      <div class="pill red">红灯 {{RED_SIZE}}</div>
+    </div>
+    <p>最大占用项：{{TOP1_NAME}}。</p>
+    <div class="top-actions">
+      <button class="btn-greenall" data-action="clean-all-green">清理全部绿灯</button>
+      <button class="btn-muted" data-action="refresh">刷新</button>
+    </div>
+  </div>
+  <section class="section">
+    <h2>Top 5 占用项</h2>
+    <ul>{{TOP5_HTML}}</ul>
+  </section>
+  <section class="section">
+    <h2>绿灯：可直接清理</h2>
+    {{GREEN_ITEMS}}
+  </section>
+  <section class="section">
+    <h2>黄灯：建议先确认</h2>
+    {{YELLOW_ITEMS}}
+  </section>
+  <section class="section">
+    <h2>红灯：谨慎清理</h2>
+    {{RED_ITEMS}}
+  </section>
+</div>
+<script>
+const CLEANUP_TOKEN = "{{CLEANUP_TOKEN}}";
+async function postAction(action, path) {
+  const res = await fetch('/api/action', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Cleanup-Token': CLEANUP_TOKEN
+    },
+    body: JSON.stringify({action, path})
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) {
+    alert(data.message || 'Action failed');
+    return;
+  }
+  if (action === 'open') {
+    return;
+  }
+  location.reload();
+}
+
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('button[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const path = btn.dataset.path || '';
+  if (action === 'refresh') {
+    location.reload();
+    return;
+  }
+  if (action === 'clean-all-green') {
+    if (!confirm('清理全部绿灯项？')) return;
+    postAction(action, '');
+    return;
+  }
+  if (action === 'clean' && !confirm('确定清理这个项目？')) return;
+  postAction(action, path);
+});
+</script>
+</body>
+</html>

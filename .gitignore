@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+cleanup-report.md
+cleanup-report.html
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+src/*.egg-info/
